@@ -28,7 +28,18 @@ PRIORITY_MAPPING = {
 
 
 def send_mail(subject, message, from_email, recipient_list, priority="medium",
-              fail_silently=False, auth_user=None, auth_password=None):
+              fail_silently=False, auth_user=None, auth_password=None, html_body=None):
+    
+    if html_body is not None:
+        import warnings
+        warnings.warn(
+            'the html_body keyword argument in send_mail is deprecated, use mailer.send_html_mail function instead.',
+            DeprecationWarning
+        )
+        return send_html_mail(subject, message, html_body, from_email, recipient_list, priority, fail_silently, auth_user, auth_password)
+    
+    
+    
     from django.utils.encoding import force_unicode
     from mailer.models import make_message
     
