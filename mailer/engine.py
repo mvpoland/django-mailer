@@ -74,6 +74,11 @@ def send_all():
                 logging.info("sending message '%s' to %s" % (message.subject.encode("utf-8"), u", ".join(message.to_addresses).encode("utf-8")))
                 email = message.email
                 email.connection = connection
+                
+                for attachment in message.attachment_set.all():
+                    mimetype = attachment.mimetype or 'application/octet-stream'
+                    email.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
+                    
                 email.send()
                 MessageLog.objects.log(message, 1) # @@@ avoid using literal result code
                 message.delete()

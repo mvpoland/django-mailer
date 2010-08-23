@@ -5,6 +5,7 @@ from datetime import datetime
 
 from django.core.mail import EmailMessage
 from django.db import models
+from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
 PRIORITIES = (
@@ -22,35 +23,35 @@ class MessageManager(models.Manager):
         the high priority messages in the queue
         """
         
-        return self.filter(priority="1")
+        return self.filter(priority="1", ready_to_send=True)
     
     def medium_priority(self):
         """
         the medium priority messages in the queue
         """
         
-        return self.filter(priority="2")
+        return self.filter(priority="2", ready_to_send=True)
     
     def low_priority(self):
         """
         the low priority messages in the queue
         """
         
-        return self.filter(priority="3")
+        return self.filter(priority="3", ready_to_send=True)
     
     def non_deferred(self):
         """
         the messages in the queue not deferred
         """
         
-        return self.filter(priority__lt="4")
+        return self.filter(priority__lt="4", ready_to_send=True)
     
     def deferred(self):
         """
         the deferred messages in the queue
         """
     
-        return self.filter(priority="4")
+        return self.filter(priority="4", ready_to_send=True)
     
     def retry_deferred(self, new_priority=2):
         count = 0
@@ -66,6 +67,8 @@ class Message(models.Model):
     message_data = models.TextField()
     when_added = models.DateTimeField(default=datetime.now)
     priority = models.CharField(max_length=1, choices=PRIORITIES, default="2")
+    ready_to_send = models.BooleanField(blank=True, default=True)
+    
     # @@@ campaign?
     # @@@ content_type?
     
@@ -111,6 +114,9 @@ set the attribute again to cause the underlying serialised data to be updated.""
             return email.subject
         else:
             return ""
+        
+    def __unicode__(self):
+        return u'%d: %s' % (self.pk, self.subject)
 
 
 def filter_recipient_list(lst):
@@ -126,7 +132,7 @@ def filter_recipient_list(lst):
 
 
 def make_message(subject="", body="", from_email=None, to=None, bcc=None,
-                 attachments=None, headers=None, priority=None):
+                 attachments=None, headers=None, priority=None, ready_to_send=True):
     """
     Creates a simple message for the email parameters supplied.
     The 'to' and 'bcc' lists are filtered using DontSendEntry.
@@ -143,7 +149,43 @@ def make_message(subject="", body="", from_email=None, to=None, bcc=None,
     
     db_msg = Message(priority=priority)
     db_msg.email = core_msg
+    db_msg.ready_to_send = ready_to_send
     return db_msg
+
+
+class AttachmentManager(models.Manager):
+    def from_content(self, message, filename, content, mimetype=None):
+        from cStringIO import StringIO
+        
+        mimetype = mimetype or 'application/octet-stream'
+        
+        attachment = self.create(message=message, mimetype=mimetype, filename=filename)
+        
+        buffer = StringIO()
+        buffer.write(content)
+        buffer.seek(2, 0)
+        buffersize = buffer.tell()
+        buffer.seek(0, 0)
+        
+        uploaded_file = InMemoryUploadedFile(buffer, 'attachment_file', filename, mimetype, buffersize, charset=None)
+        attachment.attachment_file.save(filename, uploaded_file)
+        
+        buffer.close()
+        
+        attachment.save()
+        
+        return attachment
+
+class Attachment(models.Model):
+    message = models.ForeignKey(Message)
+    attachment_file = models.FileField(u'attachment file', upload_to='attachments/', blank=True)
+    filename = models.CharField(max_length=255)
+    mimetype = models.CharField(max_length=255, blank=True)
+    
+    objects = AttachmentManager()
+    
+    def __unicode__(self):
+        return self.attachment_file.name
 
 
 class DontSendEntryManager(models.Manager):
