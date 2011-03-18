@@ -1,26 +1,23 @@
 from django.contrib import admin
-
 from mailer.models import Message, DontSendEntry, MessageLog, Attachment
 
-class AttachmentInline(admin.TabularInline):
+class AttachmentInlineAdmin(admin.TabularInline):
     model = Attachment
     extra = 0
 
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'to_addresses', 'subject', 'when_added', 'priority')
-    inlines = (AttachmentInline,)
+    list_display = ('id', 'to_address', 'subject', 'when_added', 'priority')
+    inlines = (AttachmentInlineAdmin,)
 
 class DontSendEntryAdmin(admin.ModelAdmin):
     list_display = ('to_address', 'when_added')
 
 class MessageLogAdmin(admin.ModelAdmin):
-    list_display = ('id', 'to_addresses', 'subject', 'when_attempted', 'result')
+    list_display = ('id', 'to_address', 'subject', 'when_attempted', 'result')
 
 class AttachmentAdmin(admin.ModelAdmin):
     list_display = ('message', 'attachment_file')
     raw_id_fields = ('message',)
-    
-
 
 admin.site.register(Message, MessageAdmin)
 admin.site.register(DontSendEntry, DontSendEntryAdmin)
