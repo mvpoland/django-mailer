@@ -188,7 +188,7 @@ class MessageLog(models.Model):
     objects = MessageLogManager()
 
     # fields from Message
-    to_address = models.CharField(max_length=50)
+    to_address = models.CharField(max_length=50, db_index=True)
     from_address = models.CharField(max_length=50)
     subject = models.CharField(max_length=100)
     message_body = models.TextField()
