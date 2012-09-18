@@ -17,6 +17,11 @@ EMPTY_QUEUE_SLEEP = getattr(settings, "MAILER_EMPTY_QUEUE_SLEEP", 30)
 LOCK_WAIT_TIMEOUT = getattr(settings, "MAILER_LOCK_WAIT_TIMEOUT", -1)
 
 
+# Only send emails to these addresses. Should be an iterable of compiled regexes.
+# Allow all if None.
+WHITELIST = getattr(settings, 'MAILER_WHITELIST', None)
+
+
 def prioritize():
     """
     Yield the messages in the queue in the order they should be sent.
@@ -32,6 +37,16 @@ def prioritize():
             yield Message.objects.low_priority().order_by('when_added')[0]
         if Message.objects.non_deferred().count() == 0:
             break
+
+
+def in_whitelist(address):
+    """
+    Test if the given email address is contained in the list of allowed addressees.
+    """
+    if WHITELIST is None:
+        return True
+    else:
+        return any(regex.search(address) for regex in WHITELIST)
 
 
 def send_all():
@@ -60,7 +75,7 @@ def send_all():
 
     try:
         for message in prioritize():
-            if DontSendEntry.objects.has_address(message.to_address):
+            if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
                 logging.info("skipping email to %s as on don't send list " % message.to_address)
                 MessageLog.objects.log(message, 2) # @@@ avoid using literal result code
                 message.delete()
