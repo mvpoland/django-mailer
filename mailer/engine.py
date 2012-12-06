@@ -49,7 +49,7 @@ def in_whitelist(address):
         return any(regex.search(address) for regex in WHITELIST)
 
 
-def send_all():
+def send_all(limit=None):
     """
     Send all eligible messages in the queue.
     """
@@ -72,9 +72,13 @@ def send_all():
     dont_send = 0
     deferred = 0
     sent = 0
+    total = 0
 
     try:
         for message in prioritize():
+            if limit is not None and total >= int(limit):
+                break
+
             if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
                 logging.info("skipping email to %s as on don't send list " % message.to_address)
                 MessageLog.objects.log(message, 2) # @@@ avoid using literal result code
@@ -82,11 +86,11 @@ def send_all():
                 dont_send += 1
             else:
                 try:
-                    logging.info("sending message '%s' to %s" % (message.subject.encode("utf-8"), message.to_address.encode("utf-8")))
+                    logging.debug("sending message '%s' to %s" % (message.subject.encode("utf-8"), message.to_address.encode("utf-8")))
 
                     # prepare email
                     if message.html_body:
-                        logging.info("sending message as HTML message")
+                        logging.debug("sending message as HTML message")
                         msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address, [message.to_address])
                         msg.attach_alternative(message.html_body, 'text/html')
                     else:
@@ -112,12 +116,12 @@ def send_all():
                     MessageLog.objects.log(message, 1) # @@@ avoid using literal result code
                     message.delete()
                     sent += 1
+            total += 1
     finally:
         logging.debug("releasing lock...")
         lock.release()
         logging.debug("released.")
 
-    logging.info("")
     logging.info("%s sent; %s deferred; %s don't send" % (sent, deferred, dont_send))
     logging.info("done in %.2f seconds" % (time.time() - start_time))
 
