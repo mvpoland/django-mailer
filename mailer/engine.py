@@ -60,9 +60,22 @@ def send_all(limit=None):
         logger.info('Lock timed out.')
         return
 
-    total = 0
+    # Check for multiple mail hosts
+    hosts = getattr(settings, 'EMAIL_HOSTS')
+    if hosts is not None:
+        from features import is_enabled
+        for host, config in hosts.items():
+            if is_enabled('mailer_%s' % host):
+                settings.EMAIL_HOST = config['host']
+                settings.EMAIL_USE_TLS = config['use_tls']
+                settings.EMAIL_PORT = config['port']
+                settings.EMAIL_USER = config['user']
+                settings.EMAIL_PASSWORD = config['password']
+                break
+
 
     # Start sending mails
+    total = 0
     try:
         for message in prioritize():
             # Check limit
