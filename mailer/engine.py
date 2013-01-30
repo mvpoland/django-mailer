@@ -1,32 +1,28 @@
 import time
 import smtplib
-import logging
 from lockfile import FileLock, AlreadyLocked, LockTimeout
 from socket import error as socket_error
 
+from mailer.enums import RESULT_MAPPING
 from mailer.models import Message, DontSendEntry, MessageLog
 
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 
-# when queue is empty, how long to wait (in seconds) before checking again
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 EMPTY_QUEUE_SLEEP = getattr(settings, "MAILER_EMPTY_QUEUE_SLEEP", 30)
 
-# lock timeout value. how long to wait for the lock to become available.
-# default behavior is to never wait for the lock to be available.
 LOCK_WAIT_TIMEOUT = getattr(settings, "MAILER_LOCK_WAIT_TIMEOUT", -1)
 
-
-# Only send emails to these addresses. Should be an iterable of compiled regexes.
-# Allow all if None.
 WHITELIST = getattr(settings, 'MAILER_WHITELIST', None)
-
 
 def prioritize():
     """
     Yield the messages in the queue in the order they should be sent.
     """
-
     while True:
         while Message.objects.high_priority().count():
             for message in Message.objects.high_priority().order_by('when_added'):
@@ -53,54 +49,48 @@ def send_all(limit=None):
     """
     Send all eligible messages in the queue.
     """
-
-    lock = FileLock("send_mail")
-
-    logging.debug("acquiring lock...")
+    # Get lock so only one process sends at the same time
+    lock = FileLock('send_mail')
     try:
         lock.acquire(LOCK_WAIT_TIMEOUT)
     except AlreadyLocked:
-        logging.debug("lock already in place. quitting.")
+        logger.info('Already locked.')
         return
     except LockTimeout:
-        logging.debug("waiting for the lock timed out. quitting.")
+        logger.info('Lock timed out.')
         return
-    logging.debug("acquired.")
 
-    start_time = time.time()
-
-    dont_send = 0
-    deferred = 0
-    sent = 0
     total = 0
 
+    # Start sending mails
     try:
         for message in prioritize():
+            # Check limit
             if limit is not None and total >= int(limit):
+                logger.info('Limit (%s) reached, stopping.' % limit)
                 break
 
+            # Check whitelist and don't send list
             if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
-                logging.info("skipping email to %s as on don't send list " % message.to_address)
-                MessageLog.objects.log(message, 2) # @@@ avoid using literal result code
+                logger.info('Skipping mail to %s - on don\'t send list.' % message.to_address)
+                MessageLog.objects.log(message, RESULT_MAPPING['don\'t send'])
                 message.delete()
-                dont_send += 1
             else:
                 try:
-                    logging.debug("sending message '%s' to %s" % (message.subject.encode("utf-8"), message.to_address.encode("utf-8")))
-
-                    # prepare email
+                    logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
+                    # Prepare body
                     if message.html_body:
-                        logging.debug("sending message as HTML message")
                         msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address, [message.to_address])
                         msg.attach_alternative(message.html_body, 'text/html')
                     else:
                         msg = EmailMessage(message.subject, message.message_body, message.from_address, [message.to_address])
 
-                    # attach attachments
+                    # Prepare attachments
                     for attachment in message.attachment_set.all():
                         mimetype = attachment.mimetype or 'application/octet-stream'
                         msg.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
 
+                    # Do actual send
                     msg.send()
                 except (socket_error,
                         UnicodeEncodeError,
@@ -108,22 +98,17 @@ def send_all(limit=None):
                         smtplib.SMTPRecipientsRefused,
                         smtplib.SMTPAuthenticationError,
                         smtplib.SMTPDataError), err:
+                    # Sending failed, defer message
                     message.defer()
-                    logging.info("message deferred due to failure: %s" % err)
-                    MessageLog.objects.log(message, 3, log_message=str(err)) # @@@ avoid using literal result code
-                    deferred += 1
+                    logger.info('Message deferred due to failure: %s' % err)
+                    MessageLog.objects.log(message, RESULT_MAPPING['failure'], log_message=str(err))
                 else:
-                    MessageLog.objects.log(message, 1) # @@@ avoid using literal result code
+                    # Sending succeeded
+                    MessageLog.objects.log(message, RESULT_MAPPING['success'])
                     message.delete()
-                    sent += 1
             total += 1
     finally:
-        logging.debug("releasing lock...")
         lock.release()
-        logging.debug("released.")
-
-    logging.info("%s sent; %s deferred; %s don't send" % (sent, deferred, dont_send))
-    logging.info("done in %.2f seconds" % (time.time() - start_time))
 
 def send_loop():
     """
@@ -132,7 +117,6 @@ def send_loop():
     """
 
     while True:
-        while not Message.objects.all():
-            logging.debug("sleeping for %s seconds before checking queue again" % EMPTY_QUEUE_SLEEP)
+        while Message.objects.count() == 0:
             time.sleep(EMPTY_QUEUE_SLEEP)
         send_all()
