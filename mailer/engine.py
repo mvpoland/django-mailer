@@ -69,8 +69,8 @@ def send_all(limit=None):
                 settings.EMAIL_HOST = config['host']
                 settings.EMAIL_USE_TLS = config['use_tls']
                 settings.EMAIL_PORT = config['port']
-                settings.EMAIL_USER = config['user']
-                settings.EMAIL_PASSWORD = config['password']
+                settings.EMAIL_HOST_USER = config['user']
+                settings.EMAIL_HOST_PASSWORD = config['password']
                 break
 
 
