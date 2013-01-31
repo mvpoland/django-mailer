@@ -61,7 +61,7 @@ def send_all(limit=None):
         return
 
     # Check for multiple mail hosts
-    hosts = getattr(settings, 'EMAIL_HOSTS')
+    hosts = getattr(settings, 'EMAIL_HOSTS', None)
     if hosts is not None:
         from features.utils import is_enabled
         for host, config in hosts.items():
