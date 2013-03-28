@@ -65,7 +65,7 @@ def send_all(limit=None):
     if hosts is not None:
         from gargoyle import gargoyle
         for host, config in hosts.items():
-            if gargoyle.is_active('mailer_%s' % host):
+            if gargoyle.is_active('mailer-%s' % host):
                 settings.EMAIL_HOST = config['host']
                 settings.EMAIL_USE_TLS = config['use_tls']
                 settings.EMAIL_PORT = config['port']
