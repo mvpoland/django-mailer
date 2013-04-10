@@ -63,9 +63,9 @@ def send_all(limit=None):
     # Check for multiple mail hosts
     hosts = getattr(settings, 'EMAIL_HOSTS', None)
     if hosts is not None:
-        from features.utils import is_enabled
+        from gargoyle import gargoyle
         for host, config in hosts.items():
-            if is_enabled('mailer_%s' % host):
+            if gargoyle.is_active('mailer-%s' % host):
                 settings.EMAIL_HOST = config['host']
                 settings.EMAIL_USE_TLS = config['use_tls']
                 settings.EMAIL_PORT = config['port']
