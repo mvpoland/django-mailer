@@ -3,6 +3,8 @@ import smtplib
 from lockfile import FileLock, AlreadyLocked, LockTimeout
 from socket import error as socket_error
 
+from django_statsd.clients import statsd
+
 from mailer.enums import RESULT_MAPPING
 from mailer.models import Message, DontSendEntry, MessageLog
 
@@ -75,7 +77,7 @@ def send_all(limit=None):
 
 
     # Start sending mails
-    total = 0
+    total, successes, failures = 0, 0, 0
     try:
         for message in prioritize():
             # Check limit
@@ -115,13 +117,16 @@ def send_all(limit=None):
                     message.defer()
                     logger.info('Message deferred due to failure: %s' % err)
                     MessageLog.objects.log(message, RESULT_MAPPING['failure'], log_message=str(err))
+                    failures += 1
                 else:
                     # Sending succeeded
                     MessageLog.objects.log(message, RESULT_MAPPING['success'])
                     message.delete()
+                    successes += 1
             total += 1
     finally:
         lock.release()
+        statsd.gauge('mailer.success_rate', successes / failures)
 
 def send_loop():
     """
