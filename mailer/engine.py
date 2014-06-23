@@ -126,7 +126,7 @@ def send_all(limit=None):
             total += 1
     finally:
         lock.release()
-        if failures:
+        if successes and failures:
             statsd.gauge('mailer.success_rate', successes / failures)
         else:
             statsd.gauge('mailer.success_rate', 1)
