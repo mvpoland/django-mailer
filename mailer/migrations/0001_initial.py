@@ -1,93 +1,81 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
-from south.db import db
-from django.db import models
-from mailer.models import *
+from django.db import models, migrations
+import datetime
 
-class Migration:
-    
-    def forwards(self, orm):
-        
-        # Adding model 'Message'
-        db.create_table('mailer_message', (
-            ('id', orm['mailer.Message:id']),
-            ('to_address', orm['mailer.Message:to_address']),
-            ('from_address', orm['mailer.Message:from_address']),
-            ('subject', orm['mailer.Message:subject']),
-            ('message_body', orm['mailer.Message:message_body']),
-            ('when_added', orm['mailer.Message:when_added']),
-            ('priority', orm['mailer.Message:priority']),
-            ('html_body', orm['mailer.Message:html_body']),
-        ))
-        db.send_create_signal('mailer', ['Message'])
-        
-        # Adding model 'MessageLog'
-        db.create_table('mailer_messagelog', (
-            ('id', orm['mailer.MessageLog:id']),
-            ('to_address', orm['mailer.MessageLog:to_address']),
-            ('from_address', orm['mailer.MessageLog:from_address']),
-            ('subject', orm['mailer.MessageLog:subject']),
-            ('message_body', orm['mailer.MessageLog:message_body']),
-            ('when_added', orm['mailer.MessageLog:when_added']),
-            ('priority', orm['mailer.MessageLog:priority']),
-            ('html_body', orm['mailer.MessageLog:html_body']),
-            ('when_attempted', orm['mailer.MessageLog:when_attempted']),
-            ('result', orm['mailer.MessageLog:result']),
-            ('log_message', orm['mailer.MessageLog:log_message']),
-        ))
-        db.send_create_signal('mailer', ['MessageLog'])
-        
-        # Adding model 'DontSendEntry'
-        db.create_table('mailer_dontsendentry', (
-            ('id', orm['mailer.DontSendEntry:id']),
-            ('to_address', orm['mailer.DontSendEntry:to_address']),
-            ('when_added', orm['mailer.DontSendEntry:when_added']),
-        ))
-        db.send_create_signal('mailer', ['DontSendEntry'])
-        
-    
-    
-    def backwards(self, orm):
-        
-        # Deleting model 'Message'
-        db.delete_table('mailer_message')
-        
-        # Deleting model 'MessageLog'
-        db.delete_table('mailer_messagelog')
-        
-        # Deleting model 'DontSendEntry'
-        db.delete_table('mailer_dontsendentry')
-        
-    
-    
-    models = {
-        'mailer.dontsendentry': {
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'to_address': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'when_added': ('django.db.models.fields.DateTimeField', [], {})
-        },
-        'mailer.message': {
-            'from_address': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'html_body': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'message_body': ('django.db.models.fields.TextField', [], {}),
-            'priority': ('django.db.models.fields.CharField', [], {'default': "'2'", 'max_length': '1'}),
-            'subject': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'to_address': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'when_added': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'})
-        },
-        'mailer.messagelog': {
-            'from_address': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'html_body': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'log_message': ('django.db.models.fields.TextField', [], {}),
-            'message_body': ('django.db.models.fields.TextField', [], {}),
-            'priority': ('django.db.models.fields.CharField', [], {'max_length': '1'}),
-            'result': ('django.db.models.fields.CharField', [], {'max_length': '1'}),
-            'subject': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'to_address': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'when_added': ('django.db.models.fields.DateTimeField', [], {}),
-            'when_attempted': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'})
-        }
-    }
-    
-    complete_apps = ['mailer']
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='Attachment',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('attachment_file', models.FileField(upload_to=b'attachments/', verbose_name='attachment file', blank=True)),
+                ('filename', models.CharField(max_length=255)),
+                ('mimetype', models.CharField(max_length=255, blank=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='DontSendEntry',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('to_address', models.CharField(max_length=50)),
+                ('when_added', models.DateTimeField()),
+            ],
+            options={
+                'verbose_name': "don't send entry",
+                'verbose_name_plural': "don't send entries",
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Message',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('to_address', models.CharField(max_length=50)),
+                ('from_address', models.CharField(max_length=50)),
+                ('subject', models.CharField(max_length=100)),
+                ('message_body', models.TextField()),
+                ('when_added', models.DateTimeField(default=datetime.datetime.now)),
+                ('priority', models.CharField(default=b'2', max_length=1, choices=[(b'1', b'high'), (b'2', b'medium'), (b'3', b'low'), (b'4', b'deferred')])),
+                ('html_body', models.TextField(blank=True)),
+                ('ready_to_send', models.BooleanField(default=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='MessageLog',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('to_address', models.CharField(max_length=50, db_index=True)),
+                ('from_address', models.CharField(max_length=50)),
+                ('subject', models.CharField(max_length=100)),
+                ('message_body', models.TextField()),
+                ('when_added', models.DateTimeField()),
+                ('priority', models.CharField(max_length=1, choices=[(b'1', b'high'), (b'2', b'medium'), (b'3', b'low'), (b'4', b'deferred')])),
+                ('html_body', models.TextField(blank=True)),
+                ('when_attempted', models.DateTimeField(default=datetime.datetime.now)),
+                ('result', models.CharField(max_length=1, choices=[(b'1', b'success'), (b'2', b"don't send"), (b'3', b'failure')])),
+                ('log_message', models.TextField()),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.AddField(
+            model_name='attachment',
+            name='message',
+            field=models.ForeignKey(to='mailer.Message'),
+            preserve_default=True,
+        ),
+    ]
