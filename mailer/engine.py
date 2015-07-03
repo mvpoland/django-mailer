@@ -1,25 +1,34 @@
-import time
+import errno
+import os
 import smtplib
-from lockfile import FileLock, AlreadyLocked, LockTimeout
+import time
 from socket import error as socket_error
+import signal
 
+from mailer.lockfile import FileLock, AlreadyLocked, LockTimeout
 from django_statsd.clients import statsd
 
 from mailer.enums import RESULT_MAPPING
+from mailer.exceptions import TimeoutError
 from mailer.models import Message, DontSendEntry, MessageLog
 
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 
 from logging import getLogger
-
 logger = getLogger(__name__)
+
 
 EMPTY_QUEUE_SLEEP = getattr(settings, "MAILER_EMPTY_QUEUE_SLEEP", 30)
 
 LOCK_WAIT_TIMEOUT = getattr(settings, "MAILER_LOCK_WAIT_TIMEOUT", -1)
 
 WHITELIST = getattr(settings, 'MAILER_WHITELIST', None)
+
+
+def _handle_timeout(signum, frame):
+    raise TimeoutError(os.strerror(errno.ETIME))
+
 
 def prioritize():
     """
@@ -31,7 +40,8 @@ def prioritize():
                 yield message
         while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count():
             yield Message.objects.medium_priority().order_by('when_added')[0]
-        while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count() == 0 and Message.objects.low_priority().count():
+        while Message.objects.high_priority().count() == 0 and Message.objects.medium_priority().count() == 0 and \
+                Message.objects.low_priority().count():
             yield Message.objects.low_priority().order_by('when_added')[0]
         if Message.objects.non_deferred().count() == 0:
             break
@@ -47,7 +57,7 @@ def in_whitelist(address):
         return any(regex.search(address) for regex in WHITELIST)
 
 
-def send_all(limit=None):
+def send_all(limit=None, timeout=None):
     """
     Send all eligible messages in the queue.
     """
@@ -95,18 +105,28 @@ def send_all(limit=None):
                     logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
                     # Prepare body
                     if message.html_body:
-                        msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address, [message.to_address])
+                        msg = EmailMultiAlternatives(message.subject, message.message_body,
+                                message.from_address, [message.to_address])
                         msg.attach_alternative(message.html_body, 'text/html')
                     else:
-                        msg = EmailMessage(message.subject, message.message_body, message.from_address, [message.to_address])
+                        msg = EmailMessage(message.subject, message.message_body,
+                                message.from_address, [message.to_address])
 
                     # Prepare attachments
                     for attachment in message.attachment_set.all():
                         mimetype = attachment.mimetype or 'application/octet-stream'
                         msg.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
 
-                    # Do actual send
-                    msg.send()
+                    # If a timeout is set, set up a signal to throw an error, and cancel it when the send is done
+                    if timeout is not None:
+                        signal.signal(signal.SIGALRM, _handle_timeout)
+                        signal.alarm(timeout)
+                        try:
+                            msg.send()
+                        finally:
+                            signal.alarm(0)
+                    else:
+                        msg.send()
                 except (socket_error,
                         UnicodeEncodeError,
                         smtplib.SMTPSenderRefused,
