@@ -5,6 +5,7 @@ from socket import error as socket_error
 
 from mailer.enums import RESULT_MAPPING
 from mailer.models import Message, DontSendEntry, MessageLog
+from mailer.settings import MAILER_EXTRA_HEADERS
 
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
@@ -93,10 +94,12 @@ def send_all(limit=None):
                     logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
                     # Prepare body
                     if message.html_body:
-                        msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address, [message.to_address])
+                        msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address,[message.to_address],
+                                                     headers=MAILER_EXTRA_HEADERS)
                         msg.attach_alternative(message.html_body, 'text/html')
                     else:
-                        msg = EmailMessage(message.subject, message.message_body, message.from_address, [message.to_address])
+                        msg = EmailMessage(message.subject, message.message_body, message.from_address, [message.to_address],
+                                           headers=MAILER_EXTRA_HEADERS)
 
                     # Prepare attachments
                     for attachment in message.attachment_set.all():
