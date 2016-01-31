@@ -1,4 +1,5 @@
 from optparse import make_option
+from smtplib import SMTPException
 
 from django.core.management.base import NoArgsCommand
 
@@ -16,5 +17,5 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         try:
             send_all(limit=options['limit'], timeout=options['timeout'])
-        except TimeoutError:
+        except (TimeoutError, SMTPException):
             pass
