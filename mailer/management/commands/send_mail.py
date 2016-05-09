@@ -9,7 +9,9 @@ class Command(NoArgsCommand):
 
     option_list = NoArgsCommand.option_list + (
         make_option('--limit', '-l', dest='limit', action='store', help='The maximum number of mails to send.'),
+        make_option('--no-lock', '-n', dest='use_locking', action='store_false', default=True,
+                    help='Do not use local mailer lock.'),
     )
 
     def handle_noargs(self, **options):
-        send_all(limit=options['limit'])
+        send_all(limit=options['limit'], use_locking=options['use_locking'])
