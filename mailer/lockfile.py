@@ -158,7 +158,7 @@ class NotMyLock(UnlockError):
 
 class LockBase:
     """Base class for platform-specific lock classes."""
-    def __init__(self, path, threaded=True):
+    def __init__(self, path, threaded=True, expire_timeout=None):
         """
         >>> lock = LockBase('somefile')
         >>> lock = LockBase('somefile', threaded=False)
@@ -176,6 +176,7 @@ class LockBase:
                                         "%s.%s%s" % (self.hostname,
                                                      tname,
                                                      self.pid))
+        self.expire_timeout = expire_timeout
 
     def acquire(self, timeout=None):
         """
@@ -236,6 +237,7 @@ class LinkFileLock(LockBase):
     """Lock access to a file using atomic property of link(2)."""
 
     def acquire(self, timeout=None):
+        timeout = timeout or self.expire_timeout
         try:
             open(self.unique_name, "wb").close()
         except IOError:
@@ -291,12 +293,12 @@ class LinkFileLock(LockBase):
 
 class MkdirFileLock(LockBase):
     """Lock file by creating a directory."""
-    def __init__(self, path, threaded=True):
+    def __init__(self, path, threaded=True, expire_timeout=None):
         """
         >>> lock = MkdirFileLock('somefile')
         >>> lock = MkdirFileLock('somefile', threaded=False)
         """
-        LockBase.__init__(self, path, threaded)
+        LockBase.__init__(self, path, threaded, expire_timeout=expire_timeout)
         if threaded:
             tname = "%x-" % thread.get_ident()
         else:
@@ -309,6 +311,7 @@ class MkdirFileLock(LockBase):
                                                       self.pid))
 
     def acquire(self, timeout=None):
+        timeout = timeout or self.expire_timeout
         end_time = time.time()
         if timeout is not None and timeout > 0:
             end_time += timeout
@@ -372,8 +375,8 @@ class SQLiteFileLock(LockBase):
     os.unlink(testdb)
     del _fd, tempfile
 
-    def __init__(self, path, threaded=True):
-        LockBase.__init__(self, path, threaded)
+    def __init__(self, path, threaded=True, expire_timeout=None):
+        LockBase.__init__(self, path, threaded, expire_timeout=expire_timeout)
         self.lock_file = unicode(self.lock_file)
         self.unique_name = unicode(self.unique_name)
 
@@ -394,6 +397,7 @@ class SQLiteFileLock(LockBase):
             atexit.register(os.unlink, SQLiteFileLock.testdb)
 
     def acquire(self, timeout=None):
+        timeout = timeout or self.expire_timeout
         end_time = time.time()
         if timeout is not None and timeout > 0:
             end_time += timeout
@@ -492,6 +496,24 @@ class SQLiteFileLock(LockBase):
                        "  where lock_file = ?",
                        (self.lock_file,))
         self.connection.commit()
+
+
+class NoopLock(LockBase):
+    def acquire(self, timeout=None):
+        pass
+
+    def release(self):
+        pass
+
+    def is_locked(self):
+        return False
+
+    def i_am_locking(self):
+        return True
+
+    def break_lock(self):
+        pass
+
 
 if hasattr(os, "link"):
     FileLock = LinkFileLock

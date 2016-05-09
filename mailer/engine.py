@@ -1,6 +1,6 @@
 import time
 import smtplib
-from lockfile import FileLock, AlreadyLocked, LockTimeout
+from lockfile import FileLock, AlreadyLocked, LockTimeout, NoopLock
 from socket import error as socket_error
 
 from mailer.enums import RESULT_MAPPING
@@ -46,14 +46,16 @@ def in_whitelist(address):
         return any(regex.search(address) for regex in WHITELIST)
 
 
-def send_all(limit=None):
+def send_all(limit=None, use_locking=True):
     """
     Send all eligible messages in the queue.
     """
     # Get lock so only one process sends at the same time
-    lock = FileLock('send_mail')
+    lock_cls = FileLock if use_locking else NoopLock
     try:
-        lock.acquire(LOCK_WAIT_TIMEOUT)
+        with lock_cls('send_mail', expire_timeout=LOCK_WAIT_TIMEOUT):
+            setup_smtp_settings()
+            send_messages_queued(limit)
     except AlreadyLocked:
         logger.info('Already locked.')
         return
@@ -61,6 +63,8 @@ def send_all(limit=None):
         logger.info('Lock timed out.')
         return
 
+
+def setup_smtp_settings():
     # Check for multiple mail hosts
     hosts = getattr(settings, 'EMAIL_HOSTS', None)
     if hosts is not None:
@@ -75,56 +79,58 @@ def send_all(limit=None):
                 break
 
 
+def send_messages_queued(limit):
     # Start sending mails
     total = 0
-    try:
-        for message in prioritize():
-            # Check limit
-            if limit is not None and total >= int(limit):
-                logger.info('Limit (%s) reached, stopping.' % limit)
-                break
+    for message in prioritize():
+        # Check limit
+        if limit is not None and total >= int(limit):
+            logger.info('Limit (%s) reached, stopping.' % limit)
+            break
 
-            # Check whitelist and don't send list
-            if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
-                logger.info('Skipping mail to %s - on don\'t send list.' % message.to_address)
-                MessageLog.objects.log(message, RESULT_MAPPING['don\'t send'])
-                message.delete()
-            else:
-                try:
-                    logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
-                    # Prepare body
-                    if message.html_body:
-                        msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address,[message.to_address],
-                                                     headers=MAILER_EXTRA_HEADERS)
-                        msg.attach_alternative(message.html_body, 'text/html')
-                    else:
-                        msg = EmailMessage(message.subject, message.message_body, message.from_address, [message.to_address],
-                                           headers=MAILER_EXTRA_HEADERS)
-
-                    # Prepare attachments
-                    for attachment in message.attachment_set.all():
-                        mimetype = attachment.mimetype or 'application/octet-stream'
-                        msg.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
-
-                    # Do actual send
-                    msg.send()
-                except (socket_error,
-                        UnicodeEncodeError,
-                        smtplib.SMTPSenderRefused,
-                        smtplib.SMTPRecipientsRefused,
-                        smtplib.SMTPAuthenticationError,
-                        smtplib.SMTPDataError), err:
-                    # Sending failed, defer message
-                    message.defer()
-                    logger.info('Message deferred due to failure: %s' % err)
-                    MessageLog.objects.log(message, RESULT_MAPPING['failure'], log_message=str(err))
+        # Check whitelist and don't send list
+        if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
+            logger.info('Skipping mail to %s - on don\'t send list.' % message.to_address)
+            MessageLog.objects.log(message, RESULT_MAPPING['don\'t send'])
+            message.delete()
+        else:
+            try:
+                logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
+                # Prepare body
+                if message.html_body:
+                    msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address,
+                                                 [message.to_address],
+                                                 headers=MAILER_EXTRA_HEADERS)
+                    msg.attach_alternative(message.html_body, 'text/html')
                 else:
-                    # Sending succeeded
-                    MessageLog.objects.log(message, RESULT_MAPPING['success'])
-                    message.delete()
-            total += 1
-    finally:
-        lock.release()
+                    msg = EmailMessage(message.subject, message.message_body, message.from_address,
+                                       [message.to_address],
+                                       headers=MAILER_EXTRA_HEADERS)
+
+                # Prepare attachments
+                for attachment in message.attachment_set.all():
+                    mimetype = attachment.mimetype or 'application/octet-stream'
+                    msg.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
+
+                # Do actual send
+                msg.send()
+            except (socket_error,
+                    UnicodeEncodeError,
+                    smtplib.SMTPSenderRefused,
+                    smtplib.SMTPRecipientsRefused,
+                    smtplib.SMTPAuthenticationError,
+                    smtplib.SMTPDataError), err:
+                # Sending failed, defer message
+                message.defer()
+                logger.info('Message deferred due to failure: %s' % err)
+                MessageLog.objects.log(message, RESULT_MAPPING['failure'], log_message=str(err))
+            else:
+                # Sending succeeded
+                MessageLog.objects.log(message, RESULT_MAPPING['success'])
+                message.delete()
+        total += 1
+    return total
+
 
 def send_loop():
     """
