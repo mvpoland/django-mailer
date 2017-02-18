@@ -1,20 +1,15 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 
 setup(
-    name="django-mailer",
+    name="django-mailer-mv",
     version=__import__("mailer").__version__,
     description="A reusable Django app for queuing the sending of email",
     long_description=open("docs/usage.txt").read(),
     author="James Tauber",
     author_email="jtauber@jtauber.com",
     url="http://code.google.com/p/django-mailer/",
-    packages=[
-        "mailer",
-        "mailer.management",
-        "mailer.management.commands",
-    ],
-    package_dir={"mailer": "mailer"},
+    packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
