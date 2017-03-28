@@ -1,7 +1,7 @@
 from mailer.enums import PRIORITY_MAPPING
 
 
-__version__ = '0.5.4'
+__version__ = '0.6.0'
 
 
 def _add_attachments(msg, attachments=None):
