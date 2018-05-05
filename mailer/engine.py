@@ -87,49 +87,52 @@ def send_messages_queued(limit):
         if limit is not None and total >= int(limit):
             logger.info('Limit (%s) reached, stopping.' % limit)
             break
-
-        # Check whitelist and don't send list
-        if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
-            logger.info('Skipping mail to %s - on don\'t send list.' % message.to_address)
-            MessageLog.objects.log(message, RESULT_MAPPING['don\'t send'])
-            message.delete()
-        else:
-            try:
-                logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
-                # Prepare body
-                if message.html_body:
-                    msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address,
-                                                 [message.to_address],
-                                                 headers=MAILER_EXTRA_HEADERS)
-                    msg.attach_alternative(message.html_body, 'text/html')
-                else:
-                    msg = EmailMessage(message.subject, message.message_body, message.from_address,
-                                       [message.to_address],
-                                       headers=MAILER_EXTRA_HEADERS)
-
-                # Prepare attachments
-                for attachment in message.attachment_set.all():
-                    mimetype = attachment.mimetype or 'application/octet-stream'
-                    msg.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
-
-                # Do actual send
-                msg.send()
-            except (socket_error,
-                    UnicodeEncodeError,
-                    smtplib.SMTPSenderRefused,
-                    smtplib.SMTPRecipientsRefused,
-                    smtplib.SMTPAuthenticationError,
-                    smtplib.SMTPDataError), err:
-                # Sending failed, defer message
-                message.defer()
-                logger.info('Message deferred due to failure: %s' % err)
-                MessageLog.objects.log(message, RESULT_MAPPING['failure'], log_message=str(err))
-            else:
-                # Sending succeeded
-                MessageLog.objects.log(message, RESULT_MAPPING['success'])
-                message.delete()
+        send_message(message)
         total += 1
     return total
+
+
+def send_message(message):
+    # Check whitelist and don't send list
+    if DontSendEntry.objects.has_address(message.to_address) or not in_whitelist(message.to_address):
+        logger.info('Skipping mail to %s - on don\'t send list.' % message.to_address)
+        MessageLog.objects.log(message, RESULT_MAPPING['don\'t send'])
+        message.delete()
+    else:
+        try:
+            logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
+            # Prepare body
+            if message.html_body:
+                msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address,
+                                             [message.to_address],
+                                             headers=MAILER_EXTRA_HEADERS)
+                msg.attach_alternative(message.html_body, 'text/html')
+            else:
+                msg = EmailMessage(message.subject, message.message_body, message.from_address,
+                                   [message.to_address],
+                                   headers=MAILER_EXTRA_HEADERS)
+
+            # Prepare attachments
+            for attachment in message.attachment_set.all():
+                mimetype = attachment.mimetype or 'application/octet-stream'
+                msg.attach(attachment.filename, attachment.attachment_file.read(), mimetype)
+
+            # Do actual send
+            msg.send()
+        except (socket_error,
+                UnicodeEncodeError,
+                smtplib.SMTPSenderRefused,
+                smtplib.SMTPRecipientsRefused,
+                smtplib.SMTPAuthenticationError,
+                smtplib.SMTPDataError), err:
+            # Sending failed, defer message
+            message.defer()
+            logger.info('Message deferred due to failure: %s' % err)
+            MessageLog.objects.log(message, RESULT_MAPPING['failure'], log_message=str(err))
+        else:
+            # Sending succeeded
+            MessageLog.objects.log(message, RESULT_MAPPING['success'])
+            message.delete()
 
 
 def send_loop():
