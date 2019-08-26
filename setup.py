@@ -18,5 +18,8 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Framework :: Django",
-    ]
+    ],
+    install_requires=[
+        'lockfile >= 0.8',
+    ],
 )

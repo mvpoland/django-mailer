@@ -1,16 +1,17 @@
 import time
 import smtplib
-from lockfile import FileLock, AlreadyLocked, LockTimeout, NoopLock
-from socket import error as socket_error
 
-from mailer.enums import RESULT_MAPPING
-from mailer.models import Message, DontSendEntry, MessageLog
-from mailer.settings import MAILER_EXTRA_HEADERS
+from logging import getLogger
+from socket import error as socket_error
 
 from django.conf import settings
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 
-from logging import getLogger
+from mailer import lockfile
+from mailer.enums import RESULT_MAPPING
+from mailer.models import Message, DontSendEntry, MessageLog
+from mailer.settings import MAILER_EXTRA_HEADERS
+
 
 logger = getLogger(__name__)
 
@@ -19,6 +20,7 @@ EMPTY_QUEUE_SLEEP = getattr(settings, "MAILER_EMPTY_QUEUE_SLEEP", 30)
 LOCK_WAIT_TIMEOUT = getattr(settings, "MAILER_LOCK_WAIT_TIMEOUT", -1)
 
 WHITELIST = getattr(settings, 'MAILER_WHITELIST', None)
+
 
 def prioritize():
     """
@@ -51,15 +53,15 @@ def send_all(limit=None, use_locking=True):
     Send all eligible messages in the queue.
     """
     # Get lock so only one process sends at the same time
-    lock_cls = FileLock if use_locking else NoopLock
+    lock_cls = lockfile.FileLock if use_locking else lockfile.NoopLock
     try:
-        with lock_cls('send_mail', expire_timeout=LOCK_WAIT_TIMEOUT):
+        with lock_cls('send_mail'):
             setup_smtp_settings()
             send_messages_queued(limit)
-    except AlreadyLocked:
+    except lockfile.AlreadyLocked:
         logger.info('Already locked.')
         return
-    except LockTimeout:
+    except lockfile.LockTimeout:
         logger.info('Lock timed out.')
         return
 
@@ -98,14 +100,22 @@ def send_messages_queued(limit):
                 logger.info('Sending message to %s' % message.to_address.encode("utf-8"))
                 # Prepare body
                 if message.html_body:
-                    msg = EmailMultiAlternatives(message.subject, message.message_body, message.from_address,
-                                                 [message.to_address],
-                                                 headers=MAILER_EXTRA_HEADERS)
+                    msg = EmailMultiAlternatives(
+                        message.subject,
+                        message.message_body,
+                        message.from_address,
+                        [message.to_address],
+                        headers=MAILER_EXTRA_HEADERS
+                    )
                     msg.attach_alternative(message.html_body, 'text/html')
                 else:
-                    msg = EmailMessage(message.subject, message.message_body, message.from_address,
-                                       [message.to_address],
-                                       headers=MAILER_EXTRA_HEADERS)
+                    msg = EmailMessage(
+                        message.subject,
+                        message.message_body,
+                        message.from_address,
+                        [message.to_address],
+                        headers=MAILER_EXTRA_HEADERS
+                    )
 
                 # Prepare attachments
                 for attachment in message.attachment_set.all():
@@ -119,7 +129,7 @@ def send_messages_queued(limit):
                     smtplib.SMTPSenderRefused,
                     smtplib.SMTPRecipientsRefused,
                     smtplib.SMTPAuthenticationError,
-                    smtplib.SMTPDataError), err:
+                    smtplib.SMTPDataError) as err:
                 # Sending failed, defer message
                 message.defer()
                 logger.info('Message deferred due to failure: %s' % err)

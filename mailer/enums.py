@@ -1,16 +1,17 @@
-PRIORITY_MAPPING = {
-    'high': '1',
-    'medium': '2',
-    'low': '3',
-    'deferred': '4',
-}
+PRIORITY_HIGH = "1"
+PRIORITY_MEDIUM = "2"
+PRIORITY_LOW = "3"
+PRIORITY_DEFERRED = "4"
 
-PRIORITIES = (
-    (PRIORITY_MAPPING['high'], 'high'),
-    (PRIORITY_MAPPING['medium'], 'medium'),
-    (PRIORITY_MAPPING['low'], 'low'),
-    (PRIORITY_MAPPING['deferred'], 'deferred'),
-)
+PRIORITIES = [
+    (PRIORITY_HIGH, "high"),
+    (PRIORITY_MEDIUM, "medium"),
+    (PRIORITY_LOW, "low"),
+    (PRIORITY_DEFERRED, "deferred"),
+]
+
+PRIORITY_MAPPING = dict((label, v) for v, label in PRIORITIES)
+
 
 RESULT_MAPPING = {
     'success': '1',
