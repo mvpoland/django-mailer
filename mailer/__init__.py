@@ -2,10 +2,10 @@ from __future__ import absolute_import
 
 from mailer.enums import PRIORITY_MAPPING
 
-VERSION = (0, 6, 1)  # following PEP 386
+VERSION = (0, 7, 0)  # following PEP 386
 
 
-__version__ = '0.6.1'
+__version__ = '0.7.0'
 
 
 def get_priority(priority):
