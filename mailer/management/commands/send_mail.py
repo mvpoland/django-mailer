@@ -1,14 +1,14 @@
 from optparse import make_option
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
 from mailer.engine import send_all
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = 'Do one pass through the mail queue, attempting to send all mail.'
 
-    option_list = NoArgsCommand.option_list + (
+    option_list = BaseCommand.option_list + (
         make_option(
             '--limit', '-l',
             dest='limit',
@@ -24,5 +24,5 @@ class Command(NoArgsCommand):
         ),
     )
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
         send_all(limit=options['limit'], use_locking=options['use_locking'])
