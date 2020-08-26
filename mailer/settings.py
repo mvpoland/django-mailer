@@ -9,4 +9,4 @@ Example:
     MAIL_EXTRA_HEADERS = {'X-MC-Track': 'opens,clicks'}
 
 """
-MAILER_EXTRA_HEADERS = getattr(settings, 'MAILER_EXTRA_HEADERS', None)
+MAILER_EXTRA_HEADERS = getattr(settings, "MAILER_EXTRA_HEADERS", None)

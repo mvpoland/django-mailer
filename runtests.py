@@ -19,10 +19,7 @@ DEFAULT_SETTINGS = dict(
         "mailer",
     ],
     DATABASES={
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": ":memory:",
-        }
+        "default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:",}
     },
     SITE_ID=1,
     SECRET_KEY="notasecret",
@@ -41,11 +38,9 @@ def runtests(*test_args):
     parent = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, parent)
 
-    failures = DiscoverRunner(
-        verbosity=1,
-        interactive=True,
-        failfast=False
-    ).run_tests(["mailer.tests"])
+    failures = DiscoverRunner(verbosity=1, interactive=True, failfast=False).run_tests(
+        ["mailer.tests"]
+    )
 
     sys.exit(failures)
 

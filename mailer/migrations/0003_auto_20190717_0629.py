@@ -9,18 +9,18 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mailer', '0002_auto_20171221_0721'),
+        ("mailer", "0002_auto_20171221_0721"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='message',
-            name='when_added',
+            model_name="message",
+            name="when_added",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
         migrations.AlterField(
-            model_name='messagelog',
-            name='when_attempted',
+            model_name="messagelog",
+            name="when_attempted",
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
     ]

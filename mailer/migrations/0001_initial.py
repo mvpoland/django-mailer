@@ -11,64 +11,137 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Attachment',
+            name="Attachment",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('attachment_file', models.FileField(blank=True, upload_to=b'attachments/', verbose_name='attachment file')),
-                ('filename', models.CharField(max_length=255)),
-                ('mimetype', models.CharField(blank=True, max_length=255)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "attachment_file",
+                    models.FileField(
+                        blank=True,
+                        upload_to=b"attachments/",
+                        verbose_name="attachment file",
+                    ),
+                ),
+                ("filename", models.CharField(max_length=255)),
+                ("mimetype", models.CharField(blank=True, max_length=255)),
             ],
         ),
         migrations.CreateModel(
-            name='DontSendEntry',
+            name="DontSendEntry",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('to_address', models.CharField(max_length=50)),
-                ('when_added', models.DateTimeField()),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("to_address", models.CharField(max_length=50)),
+                ("when_added", models.DateTimeField()),
             ],
             options={
-                'verbose_name': "don't send entry",
-                'verbose_name_plural': "don't send entries",
+                "verbose_name": "don't send entry",
+                "verbose_name_plural": "don't send entries",
             },
         ),
         migrations.CreateModel(
-            name='Message',
+            name="Message",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('to_address', models.CharField(max_length=50)),
-                ('from_address', models.CharField(max_length=50)),
-                ('subject', models.CharField(max_length=100)),
-                ('message_body', models.TextField()),
-                ('when_added', models.DateTimeField(default=datetime.datetime.now)),
-                ('priority', models.CharField(choices=[(b'1', b'high'), (b'2', b'medium'), (b'3', b'low'), (b'4', b'deferred')], default=b'2', max_length=1)),
-                ('html_body', models.TextField(blank=True)),
-                ('ready_to_send', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("to_address", models.CharField(max_length=50)),
+                ("from_address", models.CharField(max_length=50)),
+                ("subject", models.CharField(max_length=100)),
+                ("message_body", models.TextField()),
+                ("when_added", models.DateTimeField(default=datetime.datetime.now)),
+                (
+                    "priority",
+                    models.CharField(
+                        choices=[
+                            (b"1", b"high"),
+                            (b"2", b"medium"),
+                            (b"3", b"low"),
+                            (b"4", b"deferred"),
+                        ],
+                        default=b"2",
+                        max_length=1,
+                    ),
+                ),
+                ("html_body", models.TextField(blank=True)),
+                ("ready_to_send", models.BooleanField(default=True)),
             ],
         ),
         migrations.CreateModel(
-            name='MessageLog',
+            name="MessageLog",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('to_address', models.CharField(db_index=True, max_length=50)),
-                ('from_address', models.CharField(max_length=50)),
-                ('subject', models.CharField(max_length=100)),
-                ('message_body', models.TextField()),
-                ('when_added', models.DateTimeField()),
-                ('priority', models.CharField(choices=[(b'1', b'high'), (b'2', b'medium'), (b'3', b'low'), (b'4', b'deferred')], max_length=1)),
-                ('html_body', models.TextField(blank=True)),
-                ('when_attempted', models.DateTimeField(default=datetime.datetime.now)),
-                ('result', models.CharField(choices=[(b'1', b'success'), (b'2', b"don't send"), (b'3', b'failure')], max_length=1)),
-                ('log_message', models.TextField()),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("to_address", models.CharField(db_index=True, max_length=50)),
+                ("from_address", models.CharField(max_length=50)),
+                ("subject", models.CharField(max_length=100)),
+                ("message_body", models.TextField()),
+                ("when_added", models.DateTimeField()),
+                (
+                    "priority",
+                    models.CharField(
+                        choices=[
+                            (b"1", b"high"),
+                            (b"2", b"medium"),
+                            (b"3", b"low"),
+                            (b"4", b"deferred"),
+                        ],
+                        max_length=1,
+                    ),
+                ),
+                ("html_body", models.TextField(blank=True)),
+                ("when_attempted", models.DateTimeField(default=datetime.datetime.now)),
+                (
+                    "result",
+                    models.CharField(
+                        choices=[
+                            (b"1", b"success"),
+                            (b"2", b"don't send"),
+                            (b"3", b"failure"),
+                        ],
+                        max_length=1,
+                    ),
+                ),
+                ("log_message", models.TextField()),
             ],
         ),
         migrations.AddField(
-            model_name='attachment',
-            name='message',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='mailer.Message'),
+            model_name="attachment",
+            name="message",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="mailer.Message"
+            ),
         ),
     ]

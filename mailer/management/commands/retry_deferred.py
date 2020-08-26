@@ -7,7 +7,7 @@ logger = getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Attempt to resend any deferred mail.'
+    help = "Attempt to resend any deferred mail."
 
     def handle(self, **options):
         count = Message.objects.retry_deferred()

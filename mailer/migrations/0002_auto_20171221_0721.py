@@ -8,33 +8,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mailer', '0001_initial'),
+        ("mailer", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dontsendentry',
-            name='to_address',
+            model_name="dontsendentry",
+            name="to_address",
             field=models.CharField(max_length=254),
         ),
         migrations.AlterField(
-            model_name='message',
-            name='from_address',
+            model_name="message",
+            name="from_address",
             field=models.CharField(max_length=254),
         ),
         migrations.AlterField(
-            model_name='message',
-            name='to_address',
+            model_name="message",
+            name="to_address",
             field=models.CharField(max_length=254),
         ),
         migrations.AlterField(
-            model_name='messagelog',
-            name='from_address',
+            model_name="messagelog",
+            name="from_address",
             field=models.CharField(max_length=254),
         ),
         migrations.AlterField(
-            model_name='messagelog',
-            name='to_address',
+            model_name="messagelog",
+            name="to_address",
             field=models.CharField(db_index=True, max_length=254),
         ),
     ]

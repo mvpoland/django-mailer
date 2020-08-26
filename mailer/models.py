@@ -1,3 +1,10 @@
+from future import standard_library
+
+standard_library.install_aliases()
+
+import six
+
+from builtins import object
 
 try:  # python 2
     from cStringIO import StringIO
@@ -6,8 +13,8 @@ except ImportError:  # python 3
 
 from django.db import models
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.utils import timezone, six
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils import timezone
+from future.utils import python_2_unicode_compatible
 
 from mailer.enums import PRIORITY_MAPPING, PRIORITIES, RESULT_CODES
 
@@ -49,18 +56,14 @@ class Message(models.Model):
     message_body = models.TextField()
     when_added = models.DateTimeField(default=timezone.now)
     priority = models.CharField(
-        max_length=1,
-        choices=PRIORITIES,
-        default=PRIORITY_MAPPING["medium"]
+        max_length=1, choices=PRIORITIES, default=PRIORITY_MAPPING["medium"]
     )
     html_body = models.TextField(blank=True)
     ready_to_send = models.BooleanField(default=True, blank=True)
 
     def __str__(self):
-        return "On {0}, \"{1}\" to {2}".format(
-            self.when_added,
-            self.subject,
-            self.to_address,
+        return 'On {0}, "{1}" to {2}'.format(
+            self.when_added, self.subject, self.to_address,
         )
 
     def defer(self):
@@ -79,11 +82,7 @@ class Message(models.Model):
 class AttachmentManager(models.Manager):
     def from_content(self, message, filename, content, mimetype=None):
         mimetype = mimetype or "application/octet-stream"
-        attachment = self.create(
-            message=message,
-            mimetype=mimetype,
-            filename=filename
-        )
+        attachment = self.create(message=message, mimetype=mimetype, filename=filename)
 
         buffer = StringIO()
         buffer.write(content)
@@ -92,12 +91,7 @@ class AttachmentManager(models.Manager):
         buffer.seek(0, 0)
 
         uploaded_file = InMemoryUploadedFile(
-            buffer,
-            "attachment_file",
-            filename,
-            mimetype,
-            buffersize,
-            charset=None
+            buffer, "attachment_file", filename, mimetype, buffersize, charset=None
         )
         attachment.attachment_file.save(filename, uploaded_file)
 
@@ -111,7 +105,9 @@ class AttachmentManager(models.Manager):
 @python_2_unicode_compatible
 class Attachment(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE)
-    attachment_file = models.FileField("attachment file", upload_to="attachments/", blank=True)
+    attachment_file = models.FileField(
+        "attachment file", upload_to="attachments/", blank=True
+    )
     filename = models.CharField(max_length=255)
     mimetype = models.CharField(max_length=255, blank=True)
 
@@ -139,7 +135,7 @@ class DontSendEntry(models.Model):
     to_address = models.CharField(max_length=254)
     when_added = models.DateTimeField()
 
-    class Meta:
+    class Meta(object):
         verbose_name = "don't send entry"
         verbose_name_plural = "don't send entries"
 
@@ -155,16 +151,14 @@ class MessageLogManager(models.Manager):
         """
 
         attachments_info = "\n".join(
-            "%s: %s" % (
-                attachment.filename,
-                six.text_type(attachment)
-            )
+            "%s: %s" % (attachment.filename, six.text_type(attachment))
             for attachment in message.attachment_set.all()
         )
-        message_body = "%s\n\nAttachments:\n%s" % (
-            message.message_body,
-            attachments_info
-        ) if attachments_info else message.message_body
+        message_body = (
+            "%s\n\nAttachments:\n%s" % (message.message_body, attachments_info)
+            if attachments_info
+            else message.message_body
+        )
 
         message_log = self.create(
             to_address=message.to_address,
@@ -197,8 +191,6 @@ class MessageLog(models.Model):
     log_message = models.TextField()
 
     def __str__(self):
-        return "On {0}, \"{1}\" to {2}".format(
-            self.when_attempted,
-            self.subject,
-            self.to_address
+        return 'On {0}, "{1}" to {2}'.format(
+            self.when_attempted, self.subject, self.to_address
         )

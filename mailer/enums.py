@@ -14,13 +14,13 @@ PRIORITY_MAPPING = dict((label, v) for v, label in PRIORITIES)
 
 
 RESULT_MAPPING = {
-    'success': '1',
-    'don\'t send': '2',
-    'failure': '3',
+    "success": "1",
+    "don't send": "2",
+    "failure": "3",
 }
 
 RESULT_CODES = (
-    (RESULT_MAPPING['success'], 'success'),
-    (RESULT_MAPPING['don\'t send'], 'don\'t send'),
-    (RESULT_MAPPING['failure'], 'failure'),
+    (RESULT_MAPPING["success"], "success"),
+    (RESULT_MAPPING["don't send"], "don't send"),
+    (RESULT_MAPPING["failure"], "failure"),
 )
