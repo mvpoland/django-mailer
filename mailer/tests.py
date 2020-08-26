@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
+from builtins import next
 import smtplib
 import mock
 
@@ -28,7 +29,6 @@ class FailingMailerEmailBackend(LocMemEmailBackend):
 
 
 class BasicTestCase(TestCase):
-
     def test_save_to_db(self):
         """
         Test that using send_mail creates a Message object in DB instead, when EMAIL_BACKEND is set.
@@ -38,11 +38,8 @@ class BasicTestCase(TestCase):
         self.assertEqual(Message.objects.count(), 1)
 
 
-@override_settings(
-    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'
-)
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class SendingTest(TestCase):
-
     def setUp(self):
         pass
 
@@ -58,8 +55,10 @@ class SendingTest(TestCase):
         self.assertEqual(MessageLog.objects.count(), 1)
 
     def test_retry_deferred(self):
-        with self.settings(EMAIL_BACKEND='mailer.tests.FailingMailerEmailBackend'):
-            send_mail("Subject", "Body", "sender2@example.com", ["recipient@example.com"])
+        with self.settings(EMAIL_BACKEND="mailer.tests.FailingMailerEmailBackend"):
+            send_mail(
+                "Subject", "Body", "sender2@example.com", ["recipient@example.com"]
+            )
             send_all()
 
         self.assertEqual(Message.objects.count(), 1)
@@ -118,10 +117,11 @@ class SendingTest(TestCase):
             self.assertEqual(sent.to, ["testmanager@example.com"])
 
     def test_blacklisted_emails(self):
-        with self.settings(MAILER_EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"):
+        with self.settings(
+            MAILER_EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"
+        ):
             obj = DontSendEntry.objects.create(
-                to_address="nogo@example.com",
-                when_added=timezone.now()
+                to_address="nogo@example.com", when_added=timezone.now()
             )
             self.assertTrue(obj.to_address, "nogo@example.com")
 
@@ -149,11 +149,11 @@ class SendingTest(TestCase):
 class LockLockedTest(TestCase):
     def setUp(self):
         self.patcher_lock = mock.patch.object(
-            mailer.lockfile.FileLock,
-            'acquire',
-            side_effect=lockfile.AlreadyLocked
+            mailer.lockfile.FileLock, "acquire", side_effect=lockfile.AlreadyLocked
         )
-        self.patcher_prio = mock.patch("mailer.engine.prioritize", side_effect=Exception)
+        self.patcher_prio = mock.patch(
+            "mailer.engine.prioritize", side_effect=Exception
+        )
 
         self.lock = self.patcher_lock.start()
         self.prio = self.patcher_prio.start()
@@ -171,49 +171,99 @@ class LockLockedTest(TestCase):
         self.prio.assert_not_called()
 
 
-@override_settings(
-    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend'
-)
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class PrioritizeTest(TestCase):
     def test_prioritize(self):
         mailer.send_mail(
-            "Subject", "Body", "prio1@example.com", ["r@example.com"], priority=PRIORITY_HIGH
+            "Subject",
+            "Body",
+            "prio1@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_HIGH,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio2@example.com", ["r@example.com"], priority=PRIORITY_MEDIUM
+            "Subject",
+            "Body",
+            "prio2@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_MEDIUM,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio3@example.com", ["r@example.com"], priority=PRIORITY_LOW
+            "Subject",
+            "Body",
+            "prio3@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_LOW,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio4@example.com", ["r@example.com"], priority=PRIORITY_HIGH
+            "Subject",
+            "Body",
+            "prio4@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_HIGH,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio5@example.com", ["r@example.com"], priority=PRIORITY_HIGH
+            "Subject",
+            "Body",
+            "prio5@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_HIGH,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio6@example.com", ["r@example.com"], priority=PRIORITY_LOW
+            "Subject",
+            "Body",
+            "prio6@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_LOW,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio7@example.com", ["r@example.com"], priority=PRIORITY_LOW
+            "Subject",
+            "Body",
+            "prio7@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_LOW,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio8@example.com", ["r@example.com"], priority=PRIORITY_MEDIUM
-         )
-        mailer.send_mail(
-            "Subject", "Body", "prio9@example.com", ["r@example.com"], priority=PRIORITY_MEDIUM
+            "Subject",
+            "Body",
+            "prio8@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_MEDIUM,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio10@example.com", ["r@example.com"], priority=PRIORITY_LOW
+            "Subject",
+            "Body",
+            "prio9@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_MEDIUM,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio11@example.com", ["r@example.com"], priority=PRIORITY_MEDIUM
+            "Subject",
+            "Body",
+            "prio10@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_LOW,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio12@example.com", ["r@example.com"], priority=PRIORITY_HIGH
+            "Subject",
+            "Body",
+            "prio11@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_MEDIUM,
         )
         mailer.send_mail(
-            "Subject", "Body", "prio13@example.com", ["r@example.com"], priority=PRIORITY_DEFERRED
+            "Subject",
+            "Body",
+            "prio12@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_HIGH,
+        )
+        mailer.send_mail(
+            "Subject",
+            "Body",
+            "prio13@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_DEFERRED,
         )
         self.assertEqual(Message.objects.count(), 13)
         self.assertEqual(Message.objects.deferred().count(), 1)
@@ -265,7 +315,11 @@ class PrioritizeTest(TestCase):
 
         # Add one more mail that should still get delivered
         mailer.send_mail(
-            "Subject", "Body", "prio14@example.com", ["r@example.com"], priority=PRIORITY_HIGH
+            "Subject",
+            "Body",
+            "prio14@example.com",
+            ["r@example.com"],
+            priority=PRIORITY_HIGH,
         )
         msg = next(messages)
         self.assertEqual(msg.from_address, "prio14@example.com")
@@ -277,4 +331,3 @@ class PrioritizeTest(TestCase):
         # Ensure deferred was not deleted
         self.assertEqual(Message.objects.count(), 1)
         self.assertEqual(Message.objects.deferred().count(), 1)
-

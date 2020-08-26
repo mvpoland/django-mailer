@@ -2,7 +2,7 @@ import os
 import sys
 
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+os.environ["DJANGO_SETTINGS_MODULE"] = "settings"
 
 
 if __name__ == "__main__":

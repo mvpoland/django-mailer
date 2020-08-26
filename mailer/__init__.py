@@ -2,10 +2,7 @@ from __future__ import absolute_import
 
 from mailer.enums import PRIORITY_MAPPING
 
-VERSION = (0, 7, 3)  # following PEP 386
-
-
-__version__ = '0.7.3'
+__version__ = "0.8.0"
 
 
 def get_priority(priority):
@@ -17,7 +14,7 @@ def get_priority(priority):
     if priority in PRIORITY_MAPPING:
         priority = PRIORITY_MAPPING[priority]
 
-    if priority not in PRIORITY_MAPPING.values():
+    if priority not in list(PRIORITY_MAPPING.values()):
         raise ValueError("Invalid priority {0}".format(repr(priority)))
     return priority
 
@@ -44,7 +41,7 @@ def send_mail(
     auth_user=None,
     auth_password=None,
     html_body="",
-    attachments=None
+    attachments=None,
 ):
     """
     Puts a new email on the queue.
@@ -77,18 +74,14 @@ def send_mail(
             message_body=message,
             html_body=html_body,
             priority=priority,
-            ready_to_send=False
+            ready_to_send=False,
         )
         msg.save()
         _add_attachments(msg, attachments)
 
 
 def mail_admins(
-    subject,
-    message,
-    fail_silently=False,
-    priority="medium",
-    attachments=None
+    subject, message, fail_silently=False, priority="medium", attachments=None
 ):
     from django.utils.encoding import force_text
     from django.conf import settings
@@ -102,18 +95,14 @@ def mail_admins(
             subject=settings.EMAIL_SUBJECT_PREFIX + force_text(subject),
             message_body=force_text(message),
             priority=priority,
-            ready_to_send=False
+            ready_to_send=False,
         )
         msg.save()
         _add_attachments(msg, attachments)
 
 
 def mail_managers(
-    subject,
-    message,
-    fail_silently=False,
-    priority="medium",
-    attachments=None
+    subject, message, fail_silently=False, priority="medium", attachments=None
 ):
     from django.utils.encoding import force_text
     from django.conf import settings
@@ -127,7 +116,7 @@ def mail_managers(
             subject=settings.EMAIL_SUBJECT_PREFIX + force_text(subject),
             message_body=force_text(message),
             priority=priority,
-            ready_to_send=False
+            ready_to_send=False,
         )
         msg.save()
         _add_attachments(msg, attachments)

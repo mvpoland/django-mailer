@@ -4,12 +4,12 @@ from lockfile import LockBase, FileLock, LinkFileLock, AlreadyLocked, LockTimeou
 
 
 __all__ = [
-    'LockBase',
-    'FileLock',
-    'LinkFileLock',
-    'NoopLock',
-    'AlreadyLocked',
-    'LockTimeout',
+    "LockBase",
+    "FileLock",
+    "LinkFileLock",
+    "NoopLock",
+    "AlreadyLocked",
+    "LockTimeout",
 ]
 
 

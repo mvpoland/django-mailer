@@ -1,9 +1,11 @@
 from setuptools import setup, find_packages
 
+from mailer import __version__
+
 
 setup(
     name="django-mailer-mv",
-    version=__import__("mailer").__version__,
+    version=__version__,
     description="A reusable Django app for queuing the sending of email",
     long_description=open("docs/usage.txt").read(),
     author="James Tauber",
@@ -19,7 +21,5 @@ setup(
         "Programming Language :: Python",
         "Framework :: Django",
     ],
-    install_requires=[
-        'lockfile >= 0.8',
-    ],
+    install_requires=["future", "lockfile >= 0.8", "six",],
 )
