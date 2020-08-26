@@ -6,10 +6,7 @@ import six
 
 from builtins import object
 
-try:  # python 2
-    from cStringIO import StringIO
-except ImportError:  # python 3
-    from io import StringIO
+from io import BytesIO
 
 from django.db import models
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -84,7 +81,7 @@ class AttachmentManager(models.Manager):
         mimetype = mimetype or "application/octet-stream"
         attachment = self.create(message=message, mimetype=mimetype, filename=filename)
 
-        buffer = StringIO()
+        buffer = BytesIO()
         buffer.write(content)
         buffer.seek(2, 0)
         buffersize = buffer.tell()
