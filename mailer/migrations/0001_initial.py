@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                     "attachment_file",
                     models.FileField(
                         blank=True,
-                        upload_to=b"attachments/",
+                        upload_to="attachments/",
                         verbose_name="attachment file",
                     ),
                 ),
@@ -79,12 +79,12 @@ class Migration(migrations.Migration):
                     "priority",
                     models.CharField(
                         choices=[
-                            (b"1", b"high"),
-                            (b"2", b"medium"),
-                            (b"3", b"low"),
-                            (b"4", b"deferred"),
+                            ("1", "high"),
+                            ("2", "medium"),
+                            ("3", "low"),
+                            ("4", "deferred"),
                         ],
-                        default=b"2",
+                        default="2",
                         max_length=1,
                     ),
                 ),
@@ -113,10 +113,10 @@ class Migration(migrations.Migration):
                     "priority",
                     models.CharField(
                         choices=[
-                            (b"1", b"high"),
-                            (b"2", b"medium"),
-                            (b"3", b"low"),
-                            (b"4", b"deferred"),
+                            ("1", "high"),
+                            ("2", "medium"),
+                            ("3", "low"),
+                            ("4", "deferred"),
                         ],
                         max_length=1,
                     ),
@@ -127,9 +127,9 @@ class Migration(migrations.Migration):
                     "result",
                     models.CharField(
                         choices=[
-                            (b"1", b"success"),
-                            (b"2", b"don't send"),
-                            (b"3", b"failure"),
+                            ("1", "success"),
+                            ("2", "don't send"),
+                            ("3", "failure"),
                         ],
                         max_length=1,
                     ),
