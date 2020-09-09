@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from mailer.enums import PRIORITY_MAPPING
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 
 def get_priority(priority):
@@ -55,12 +55,12 @@ def send_mail(
     ('filename.txt', 'raw bytestring', 'application/octet-stream')
     """
     from django.conf import settings
-    from django.utils.encoding import force_text
+    from django.utils.encoding import force_str
     from mailer.models import Message
 
     # need to do this in case subject used lazy version of ugettext
-    subject = force_text(subject)
-    message = force_text(message)
+    subject = force_str(subject)
+    message = force_str(message)
     priority = get_priority(priority)
 
     if from_email is None:
@@ -83,7 +83,7 @@ def send_mail(
 def mail_admins(
     subject, message, fail_silently=False, priority="medium", attachments=None
 ):
-    from django.utils.encoding import force_text
+    from django.utils.encoding import force_str
     from django.conf import settings
     from mailer.models import Message
 
@@ -92,8 +92,8 @@ def mail_admins(
         msg = Message(
             to_address=to_address,
             from_address=settings.SERVER_EMAIL,
-            subject=settings.EMAIL_SUBJECT_PREFIX + force_text(subject),
-            message_body=force_text(message),
+            subject=settings.EMAIL_SUBJECT_PREFIX + force_str(subject),
+            message_body=force_str(message),
             priority=priority,
             ready_to_send=False,
         )
@@ -104,7 +104,7 @@ def mail_admins(
 def mail_managers(
     subject, message, fail_silently=False, priority="medium", attachments=None
 ):
-    from django.utils.encoding import force_text
+    from django.utils.encoding import force_str
     from django.conf import settings
     from mailer.models import Message
 
@@ -113,8 +113,8 @@ def mail_managers(
         msg = Message(
             to_address=to_address,
             from_address=settings.SERVER_EMAIL,
-            subject=settings.EMAIL_SUBJECT_PREFIX + force_text(subject),
-            message_body=force_text(message),
+            subject=settings.EMAIL_SUBJECT_PREFIX + force_str(subject),
+            message_body=force_str(message),
             priority=priority,
             ready_to_send=False,
         )
