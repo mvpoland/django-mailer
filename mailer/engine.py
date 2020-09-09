@@ -111,7 +111,7 @@ def send_messages_queued(limit):
         else:
             try:
                 logger.info(
-                    "Sending message to %s" % message.to_address.encode("utf-8")
+                    "Sending message to %s" % message.to_address
                 )
                 # Prepare body
                 if message.html_body:
