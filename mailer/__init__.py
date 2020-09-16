@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from mailer.enums import PRIORITY_MAPPING
 
-__version__ = "0.8.2"
+__version__ = "0.8.3"
 
 
 def get_priority(priority):
