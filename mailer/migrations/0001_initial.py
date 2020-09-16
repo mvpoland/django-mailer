@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("html_body", models.TextField(blank=True)),
-                ("ready_to_send", models.BooleanField(default=True)),
+                ("ready_to_send", models.BooleanField(blank=True, default=True)),
             ],
         ),
         migrations.CreateModel(

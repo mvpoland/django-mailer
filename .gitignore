@@ -4,3 +4,4 @@ dist
 MANIFEST
 .idea
 .tox
+db.sqlite3
