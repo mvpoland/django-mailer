@@ -1,17 +1,9 @@
-from future import standard_library
-
-standard_library.install_aliases()
-
 import six
-
-from builtins import object
-
 from io import BytesIO
 
 from django.db import models
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils import timezone
-from future.utils import python_2_unicode_compatible
 
 from mailer.enums import PRIORITY_MAPPING, PRIORITIES, RESULT_CODES
 
@@ -43,7 +35,6 @@ class MessageManager(models.Manager):
         return count
 
 
-@python_2_unicode_compatible
 class Message(models.Model):
     objects = MessageManager()
 
@@ -99,7 +90,6 @@ class AttachmentManager(models.Manager):
         return attachment
 
 
-@python_2_unicode_compatible
 class Attachment(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE)
     attachment_file = models.FileField(
@@ -125,14 +115,13 @@ class DontSendEntryManager(models.Manager):
             return False
 
 
-@python_2_unicode_compatible
 class DontSendEntry(models.Model):
     objects = DontSendEntryManager()
 
     to_address = models.CharField(max_length=254)
     when_added = models.DateTimeField()
 
-    class Meta(object):
+    class Meta:
         verbose_name = "don't send entry"
         verbose_name_plural = "don't send entries"
 
@@ -171,7 +160,6 @@ class MessageLogManager(models.Manager):
         message_log.save()
 
 
-@python_2_unicode_compatible
 class MessageLog(models.Model):
     objects = MessageLogManager()
 
