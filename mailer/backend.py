@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.core.mail.backends.base import BaseEmailBackend
 
 from mailer.models import Message

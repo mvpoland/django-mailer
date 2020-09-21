@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from lockfile import LockBase, FileLock, LinkFileLock, AlreadyLocked, LockTimeout
 
 
