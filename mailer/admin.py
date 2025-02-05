@@ -18,6 +18,7 @@ class DontSendEntryAdmin(admin.ModelAdmin):
 
 class MessageLogAdmin(admin.ModelAdmin):
     list_display = ("id", "to_address", "subject", "when_attempted", "result")
+    search_fields = ("to_address",)
 
 
 class AttachmentAdmin(admin.ModelAdmin):
